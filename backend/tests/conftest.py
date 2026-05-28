@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 
 @pytest.fixture
@@ -11,7 +11,8 @@ def client():
 
 @pytest.fixture
 def mock_supabase(mocker):
-    client = AsyncMock()
+    """MagicMock for the Supabase client — builder chain is sync, only .execute() is async."""
+    client = MagicMock()
     mocker.patch("app.core.supabase.get_supabase_client", new_callable=AsyncMock, return_value=client)
     return client
 
