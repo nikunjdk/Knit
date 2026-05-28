@@ -1,6 +1,10 @@
 import os
+from unittest.mock import AsyncMock, MagicMock
 
-# Set test env vars before any app imports so pydantic-settings always has values.
+import pytest
+from fastapi.testclient import TestClient
+
+# Set test env vars before any app.* imports so pydantic-settings always has values.
 # Uses setdefault so CI-injected vars (if any) take priority over these defaults.
 _TEST_ENV = {
     "SUPABASE_URL": "http://localhost",
@@ -16,14 +20,11 @@ _TEST_ENV = {
 for _k, _v in _TEST_ENV.items():
     os.environ.setdefault(_k, _v)
 
-import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
-
 
 @pytest.fixture
 def client():
     from app.main import app
+
     return TestClient(app)
 
 

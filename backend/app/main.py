@@ -14,6 +14,7 @@ setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.core.supabase import get_supabase_client
+
     await get_supabase_client()
     yield
 

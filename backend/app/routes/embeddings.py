@@ -43,11 +43,7 @@ async def recompute_embeddings(
     # Fetch profile
     try:
         profile_result = (
-            await sb.table("profiles")
-            .select("id, role, company, interests")
-            .eq("id", user_id)
-            .single()
-            .execute()
+            await sb.table("profiles").select("id, role, company, interests").eq("id", user_id).single().execute()
         )
     except Exception:
         logger.exception("Failed to fetch profile for embedding")
@@ -102,9 +98,13 @@ async def recompute_embeddings(
 
     # Persist event embedding
     try:
-        await sb.table("event_attendees").update(
-            {"event_embedding": event_vector}
-        ).eq("event_id", body.event_id).eq("user_id", user_id).execute()
+        await (
+            sb.table("event_attendees")
+            .update({"event_embedding": event_vector})
+            .eq("event_id", body.event_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
     except Exception:
         logger.exception("Failed to persist event embedding")
 
@@ -127,12 +127,18 @@ async def recompute_embeddings(
         score = cosine_similarity(event_vector, other["event_embedding"])
         uid_a, uid_b = canonical_pair(user_id, other_id)
         try:
-            await sb.table("event_attendee_scores").upsert({
-                "event_id": body.event_id,
-                "user_a_id": uid_a,
-                "user_b_id": uid_b,
-                "score": score,
-            }).execute()
+            await (
+                sb.table("event_attendee_scores")
+                .upsert(
+                    {
+                        "event_id": body.event_id,
+                        "user_a_id": uid_a,
+                        "user_b_id": uid_b,
+                        "score": score,
+                    }
+                )
+                .execute()
+            )
         except Exception:
             logger.exception("Failed to upsert score for pair (%s, %s)", uid_a, uid_b)
 

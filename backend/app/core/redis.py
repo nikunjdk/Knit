@@ -1,5 +1,7 @@
 from functools import lru_cache
+
 import httpx
+
 from app.core.config import get_settings
 
 

@@ -1,12 +1,12 @@
 from unittest.mock import AsyncMock, MagicMock
 
-
 _TEST_USER = "00000000-0000-0000-0000-000000000001"
 _JWT_SECRET = "test-secret-at-least-32-chars-long!!"
 
 
 def _auth_headers():
     from jose import jwt
+
     token = jwt.encode({"sub": _TEST_USER, "role": "authenticated"}, _JWT_SECRET, algorithm="HS256")
     return {"Authorization": f"Bearer {token}"}
 
@@ -68,6 +68,7 @@ def test_enrich_profile_no_usable_data(client, mocker):
 
 def test_enrich_profile_linkd_timeout(client, mocker):
     import httpx
+
     mocker.patch("app.routes.profiles.get_profile", side_effect=httpx.TimeoutException("timeout"))
 
     r = client.post(
@@ -110,11 +111,39 @@ def test_enrich_profile_tag_mapping_returns_only_valid_tags(client, mocker):
     )
     assert r.status_code == 200
     interests = r.json()["interests"]
-    valid_tags = {"AI/ML", "Web Dev", "Mobile", "DevOps", "Data", "Cybersecurity", "Open Source",
-                  "Blockchain", "Fintech", "Healthtech", "Edtech", "Climate", "SaaS", "Consumer",
-                  "B2B", "Deep Tech", "Founder", "Engineer", "Designer", "PM", "Marketer",
-                  "Researcher", "Investor", "Student", "Hiring", "Job Hunting", "Cofounder Search",
-                  "Investing", "Mentoring", "Collaborating", "Learning"}
+    valid_tags = {
+        "AI/ML",
+        "Web Dev",
+        "Mobile",
+        "DevOps",
+        "Data",
+        "Cybersecurity",
+        "Open Source",
+        "Blockchain",
+        "Fintech",
+        "Healthtech",
+        "Edtech",
+        "Climate",
+        "SaaS",
+        "Consumer",
+        "B2B",
+        "Deep Tech",
+        "Founder",
+        "Engineer",
+        "Designer",
+        "PM",
+        "Marketer",
+        "Researcher",
+        "Investor",
+        "Student",
+        "Hiring",
+        "Job Hunting",
+        "Cofounder Search",
+        "Investing",
+        "Mentoring",
+        "Collaborating",
+        "Learning",
+    }
     assert all(t in valid_tags for t in interests)
     assert "NotAValidTag" not in interests
     assert "FAKE" not in interests

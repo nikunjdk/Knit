@@ -9,7 +9,9 @@ _EVENT_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
 
 def _auth_headers(user_id=_ORGANIZER_ID):
     import os
+
     from jose import jwt
+
     token = jwt.encode(
         {"sub": user_id, "role": "authenticated"},
         os.environ["SUPABASE_JWT_SECRET"],
@@ -71,9 +73,7 @@ def _setup_mocks(mocker, event=None, attendees=None, connections=None, cb_open=F
         return_value=MagicMock(data=attendees if attendees is not None else _mock_attendees())
     )
     # atomic increment (UPDATE ... RETURNING)
-    mock_sb.rpc.return_value.execute = AsyncMock(
-        return_value=MagicMock(data=[{"digest_generation_count": 1}])
-    )
+    mock_sb.rpc.return_value.execute = AsyncMock(return_value=MagicMock(data=[{"digest_generation_count": 1}]))
     mocker.patch("app.routes.digest.get_supabase_client", new_callable=AsyncMock, return_value=mock_sb)
     return mock_sb, mock_redis
 

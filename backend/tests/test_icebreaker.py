@@ -10,7 +10,9 @@ _UID_A, _UID_B = sorted([_TEST_USER, _OTHER_USER])
 
 def _auth_headers():
     import os
+
     from jose import jwt
+
     token = jwt.encode(
         {"sub": _TEST_USER, "role": "authenticated"},
         os.environ["SUPABASE_JWT_SECRET"],
@@ -32,15 +34,21 @@ def _parse_sse(text: str) -> list[dict]:
 
 def _attendees_data():
     return [
-        {"user_id": _TEST_USER, "agenda": "Find cofounders",
-         "profiles": {"role": "Engineer", "company": "Acme", "interests": ["AI/ML"]}},
-        {"user_id": _OTHER_USER, "agenda": "Meet investors",
-         "profiles": {"role": "PM", "company": "Beta", "interests": ["SaaS"]}},
+        {
+            "user_id": _TEST_USER,
+            "agenda": "Find cofounders",
+            "profiles": {"role": "Engineer", "company": "Acme", "interests": ["AI/ML"]},
+        },
+        {
+            "user_id": _OTHER_USER,
+            "agenda": "Meet investors",
+            "profiles": {"role": "PM", "company": "Beta", "interests": ["SaaS"]},
+        },
     ]
 
 
 def test_redis_cache_hit_no_gemini(client, mocker):
-    """Redis hit — Gemini never called, cached content streamed immediately."""
+    """Redis hit -- Gemini never called, cached content streamed immediately."""
     mock_stream = mocker.patch("app.routes.icebreaker.generate_stream")
 
     mock_redis = MagicMock()
@@ -60,20 +68,19 @@ def test_redis_cache_hit_no_gemini(client, mocker):
 
 
 def test_postgres_cache_hit_writes_redis(client, mocker):
-    """Postgres hit — writes to Redis, no Gemini call."""
+    """Postgres hit -- writes to Redis, no Gemini call."""
     mock_stream = mocker.patch("app.routes.icebreaker.generate_stream")
 
     mock_redis = MagicMock()
-    mock_redis.get = AsyncMock(return_value=None)   # Redis miss
+    mock_redis.get = AsyncMock(return_value=None)  # Redis miss
     mock_redis.set = AsyncMock()
     mocker.patch("app.routes.icebreaker.get_redis_client", return_value=mock_redis)
 
     mock_sb = MagicMock()
     # icebreaker_cache: Postgres hit
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .eq.return_value.eq.return_value.maybe_single.return_value.execute = AsyncMock(
-            return_value=MagicMock(data={"content": "PG cached text"})
-        )
+    _eq3 = mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value
+    _pg_node = _eq3.maybe_single.return_value
+    _pg_node.execute = AsyncMock(return_value=MagicMock(data={"content": "PG cached text"}))
     mocker.patch("app.routes.icebreaker.get_supabase_client", new_callable=AsyncMock, return_value=mock_sb)
 
     r = client.get(
@@ -89,7 +96,8 @@ def test_postgres_cache_hit_writes_redis(client, mocker):
 
 
 def test_full_generation_caches_result(client, mocker):
-    """Both caches miss — Gemini generates, result cached in Postgres + Redis."""
+    """Both caches miss -- Gemini generates, result cached in Postgres + Redis."""
+
     async def _fake_stream(prompt):
         yield "Hello "
         yield "world!"
@@ -105,19 +113,15 @@ def test_full_generation_caches_result(client, mocker):
 
     mock_sb = MagicMock()
     # icebreaker_cache: Postgres miss
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .eq.return_value.eq.return_value.maybe_single.return_value.execute = AsyncMock(
-            return_value=MagicMock(data=None)
-        )
+    _eq3 = mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value
+    _pg_node = _eq3.maybe_single.return_value
+    _pg_node.execute = AsyncMock(return_value=MagicMock(data=None))
     # event_attendees fetch
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .in_.return_value.execute = AsyncMock(
-            return_value=MagicMock(data=_attendees_data())
-        )
-    # upsert icebreaker_cache
-    mock_sb.table.return_value.upsert.return_value.execute = AsyncMock(
-        return_value=MagicMock(data=[{}])
+    mock_sb.table.return_value.select.return_value.eq.return_value.in_.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=_attendees_data())
     )
+    # upsert icebreaker_cache
+    mock_sb.table.return_value.upsert.return_value.execute = AsyncMock(return_value=MagicMock(data=[{}]))
     mocker.patch("app.routes.icebreaker.get_supabase_client", new_callable=AsyncMock, return_value=mock_sb)
 
     r = client.get(
@@ -136,7 +140,7 @@ def test_full_generation_caches_result(client, mocker):
 
 
 def test_circuit_breaker_open_before_generation(client, mocker):
-    """Both caches miss, circuit breaker open → 429 before Gemini."""
+    """Both caches miss, circuit breaker open -> 429 before Gemini."""
     mock_stream = mocker.patch("app.routes.icebreaker.generate_stream")
 
     mock_redis = MagicMock()
@@ -144,10 +148,9 @@ def test_circuit_breaker_open_before_generation(client, mocker):
     mocker.patch("app.routes.icebreaker.get_redis_client", return_value=mock_redis)
 
     mock_sb = MagicMock()
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .eq.return_value.eq.return_value.maybe_single.return_value.execute = AsyncMock(
-            return_value=MagicMock(data=None)
-        )
+    _eq3 = mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value
+    _pg_node = _eq3.maybe_single.return_value
+    _pg_node.execute = AsyncMock(return_value=MagicMock(data=None))
     mocker.patch("app.routes.icebreaker.get_supabase_client", new_callable=AsyncMock, return_value=mock_sb)
 
     r = client.get(
@@ -159,21 +162,19 @@ def test_circuit_breaker_open_before_generation(client, mocker):
 
 
 def test_users_not_in_same_event(client, mocker):
-    """One user missing from event_attendees → 404."""
+    """One user missing from event_attendees -> 404."""
     mock_redis = MagicMock()
     mock_redis.get = AsyncMock(side_effect=[None, None])  # both cache misses, CB not open
     mocker.patch("app.routes.icebreaker.get_redis_client", return_value=mock_redis)
 
     mock_sb = MagicMock()
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .eq.return_value.eq.return_value.maybe_single.return_value.execute = AsyncMock(
-            return_value=MagicMock(data=None)
-        )
+    _eq3 = mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value
+    _pg_node = _eq3.maybe_single.return_value
+    _pg_node.execute = AsyncMock(return_value=MagicMock(data=None))
     # Only one attendee returned
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .in_.return_value.execute = AsyncMock(
-            return_value=MagicMock(data=[_attendees_data()[0]])  # only TEST_USER
-        )
+    mock_sb.table.return_value.select.return_value.eq.return_value.in_.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[_attendees_data()[0]])  # only TEST_USER
+    )
     mocker.patch("app.routes.icebreaker.get_supabase_client", new_callable=AsyncMock, return_value=mock_sb)
 
     r = client.get(

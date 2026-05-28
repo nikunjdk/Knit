@@ -21,10 +21,9 @@ def _mock_event_row():
 def _make_supabase_mock(data):
     """Supabase client uses a synchronous builder chain; only .execute() is async."""
     mock_sb = MagicMock()
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .maybe_single.return_value.execute = AsyncMock(
-            return_value=MagicMock(data=data)
-        )
+    mock_sb.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=data)
+    )
     return mock_sb
 
 

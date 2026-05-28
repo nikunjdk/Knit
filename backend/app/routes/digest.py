@@ -26,7 +26,7 @@ def _compute_stats(attendees: list[dict], connections: list[dict]) -> dict:
     tag_counter: Counter = Counter()
     for att in attendees:
         profile = att.get("profiles") or {}
-        for tag in (profile.get("interests") or []):
+        for tag in profile.get("interests") or []:
             tag_counter[tag] += 1
     top_tags = [tag for tag, _ in tag_counter.most_common(3)]
 
@@ -90,10 +90,7 @@ async def stream_digest(
     # Fetch attendees with profile interests for stats
     try:
         att_result = (
-            await sb.table("event_attendees")
-            .select("user_id, profiles(interests)")
-            .eq("event_id", event_id)
-            .execute()
+            await sb.table("event_attendees").select("user_id, profiles(interests)").eq("event_id", event_id).execute()
         )
         attendees = att_result.data or []
     except Exception:
@@ -102,12 +99,7 @@ async def stream_digest(
 
     # Fetch connections for density stat
     try:
-        conn_result = (
-            await sb.table("connections")
-            .select("id")
-            .eq("event_id", event_id)
-            .execute()
-        )
+        conn_result = await sb.table("connections").select("id").eq("event_id", event_id).execute()
         connections = conn_result.data or []
     except Exception:
         logger.exception("Failed to fetch connections for digest")

@@ -1,5 +1,7 @@
 import asyncio
+
 from supabase import AsyncClient, acreate_client
+
 from app.core.config import get_settings
 
 _client: AsyncClient | None = None

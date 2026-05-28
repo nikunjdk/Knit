@@ -16,10 +16,37 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["profiles"])
 
 _VALID_TAGS = {
-    "AI/ML", "Web Dev", "Mobile", "DevOps", "Data", "Cybersecurity", "Open Source", "Blockchain",
-    "Fintech", "Healthtech", "Edtech", "Climate", "SaaS", "Consumer", "B2B", "Deep Tech",
-    "Founder", "Engineer", "Designer", "PM", "Marketer", "Researcher", "Investor", "Student",
-    "Hiring", "Job Hunting", "Cofounder Search", "Investing", "Mentoring", "Collaborating", "Learning",
+    "AI/ML",
+    "Web Dev",
+    "Mobile",
+    "DevOps",
+    "Data",
+    "Cybersecurity",
+    "Open Source",
+    "Blockchain",
+    "Fintech",
+    "Healthtech",
+    "Edtech",
+    "Climate",
+    "SaaS",
+    "Consumer",
+    "B2B",
+    "Deep Tech",
+    "Founder",
+    "Engineer",
+    "Designer",
+    "PM",
+    "Marketer",
+    "Researcher",
+    "Investor",
+    "Student",
+    "Hiring",
+    "Job Hunting",
+    "Cofounder Search",
+    "Investing",
+    "Mentoring",
+    "Collaborating",
+    "Learning",
 }
 
 _HEADLINE_SPLITS = [" at ", " @ ", " | "]
@@ -42,6 +69,7 @@ def _parse_headline(headline: str | None) -> tuple[str | None, str | None]:
 
 async def _map_interests_via_gemini(skills: list[str]) -> list[str]:
     from google import genai
+
     from app.core.config import get_settings
 
     client = genai.Client(api_key=get_settings().GEMINI_API_KEY)

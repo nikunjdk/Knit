@@ -51,7 +51,8 @@ def _sse_stream(content: str) -> StreamingResponse:
         yield f"data: {json.dumps({'done': True})}\n\n"
 
     return StreamingResponse(
-        _gen(), media_type="text/event-stream",
+        _gen(),
+        media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
@@ -131,12 +132,18 @@ async def stream_icebreaker(
             full_content = "".join(collected)
 
             try:
-                await sb.table("icebreaker_cache").upsert({
-                    "event_id": event_id,
-                    "user_a_id": uid_a,
-                    "user_b_id": uid_b,
-                    "content": full_content,
-                }).execute()
+                await (
+                    sb.table("icebreaker_cache")
+                    .upsert(
+                        {
+                            "event_id": event_id,
+                            "user_a_id": uid_a,
+                            "user_b_id": uid_b,
+                            "content": full_content,
+                        }
+                    )
+                    .execute()
+                )
             except Exception:
                 logger.exception("Failed to persist icebreaker to Postgres")
 

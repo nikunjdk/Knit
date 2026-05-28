@@ -1,7 +1,8 @@
 import asyncio
 import datetime
 import logging
-from typing import AsyncGenerator, TYPE_CHECKING
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 from google import genai
 
@@ -31,7 +32,7 @@ async def embed_text(text: str) -> list[float]:
     return result.embeddings[0].values
 
 
-async def generate_stream(prompt: str) -> AsyncGenerator[str, None]:
+async def generate_stream(prompt: str) -> AsyncGenerator[str]:
     client = _get_client()
     async for chunk in await client.aio.models.generate_content_stream(
         model="gemini-2.0-flash",
@@ -44,10 +45,8 @@ async def generate_stream(prompt: str) -> AsyncGenerator[str, None]:
 async def increment_gemini_counter(redis: "RedisClient") -> None:
     count = await redis.incr(_DAILY_COUNT_KEY)
     if count == 1:
-        now = datetime.datetime.now(datetime.timezone.utc)
-        midnight = (now + datetime.timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        now = datetime.datetime.now(datetime.UTC)
+        midnight = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         await redis.expire(_DAILY_COUNT_KEY, int((midnight - now).total_seconds()))
     if count >= _DAILY_LIMIT:
         await redis.set(_CIRCUIT_BREAKER_KEY, "1", ex=86400)

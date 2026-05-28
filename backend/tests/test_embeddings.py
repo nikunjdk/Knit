@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock
 
 _TEST_USER = "00000000-0000-0000-0000-000000000001"
 _OTHER_USER_A = "00000000-0000-0000-0000-000000000002"
@@ -9,7 +9,9 @@ _FAKE_VECTOR = [0.1] * 768
 
 def _auth_headers():
     import os
+
     from jose import jwt
+
     token = jwt.encode(
         {"sub": _TEST_USER, "role": "authenticated"},
         os.environ["SUPABASE_JWT_SECRET"],
@@ -69,17 +71,17 @@ def test_recompute_with_event_produces_scores(client, mocker):
     )
     # Attendees fetch (returns 2 other users with embeddings)
     mock_sb.table.return_value.select.return_value.eq.return_value.neq.return_value.execute = AsyncMock(
-        return_value=MagicMock(data=[
-            _make_attendee_row(_OTHER_USER_A, _FAKE_VECTOR),
-            _make_attendee_row(_OTHER_USER_B, _FAKE_VECTOR),
-        ])
+        return_value=MagicMock(
+            data=[
+                _make_attendee_row(_OTHER_USER_A, _FAKE_VECTOR),
+                _make_attendee_row(_OTHER_USER_B, _FAKE_VECTOR),
+            ]
+        )
     )
     mock_sb.table.return_value.update.return_value.eq.return_value.execute = AsyncMock(
         return_value=MagicMock(data=[{}])
     )
-    mock_sb.table.return_value.upsert.return_value.execute = AsyncMock(
-        return_value=MagicMock(data=[{}])
-    )
+    mock_sb.table.return_value.upsert.return_value.execute = AsyncMock(return_value=MagicMock(data=[{}]))
     mocker.patch("app.routes.embeddings.get_supabase_client", new_callable=AsyncMock, return_value=mock_sb)
 
     r = client.post("/embeddings/recompute", json={"event_id": _EVENT_ID}, headers=_auth_headers())
