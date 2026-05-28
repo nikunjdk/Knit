@@ -1,3 +1,21 @@
+import os
+
+# Set test env vars before any app imports so pydantic-settings always has values.
+# Uses setdefault so CI-injected vars (if any) take priority over these defaults.
+_TEST_ENV = {
+    "SUPABASE_URL": "http://localhost",
+    "SUPABASE_SERVICE_ROLE_KEY": "test",
+    "SUPABASE_JWT_SECRET": "test-secret-at-least-32-chars-long!!",
+    "GEMINI_API_KEY": "test",
+    "LINKD_API_KEY": "test",
+    "UPSTASH_REDIS_URL": "http://localhost",
+    "UPSTASH_REDIS_TOKEN": "test",
+    "ENVIRONMENT": "qa",
+    "LOG_LEVEL": "DEBUG",
+}
+for _k, _v in _TEST_ENV.items():
+    os.environ.setdefault(_k, _v)
+
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock
@@ -42,13 +60,11 @@ def mock_linkd(mocker):
 @pytest.fixture
 def valid_jwt_headers():
     """Pre-signed JWT for user_id 00000000-0000-0000-0000-000000000001, matches test env secret."""
-    import os
     from jose import jwt as jose_jwt
 
-    secret = os.environ.get("SUPABASE_JWT_SECRET", "test-secret-at-least-32-chars-long!!")
     token = jose_jwt.encode(
         {"sub": "00000000-0000-0000-0000-000000000001", "role": "authenticated"},
-        secret,
+        os.environ["SUPABASE_JWT_SECRET"],
         algorithm="HS256",
     )
     return {"Authorization": f"Bearer {token}"}
