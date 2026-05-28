@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "gen-lang-client-0341995779",
+    "qa": "gen-lang-client-0341995779",
+    "prod": "gen-lang-client-0414749325"
+  }
+}

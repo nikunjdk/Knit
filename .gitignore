@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Env files — never commit real values
+backend/.env.qa
+backend/.env.prod
+.env
+.env.*
+!.env.example
+!backend/.env.qa.example
+!backend/.env.prod.example
+
+# Flutter / Dart
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/build/
+frontend/.packages
+frontend/pubspec.lock   # keep for reproducibility — remove this line to gitignore it
+
+# Firebase
+.firebase/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Node (Railway CLI, Firebase tools)
+node_modules/
