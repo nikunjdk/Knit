@@ -6,14 +6,13 @@ from app.core.auth import verify_jwt
 from app.core.redis import get_redis_client
 from app.core.supabase import get_supabase_client
 from app.models.profiles import EmbeddingRecomputeRequest
-from app.services.gemini import embed_text
+from app.services.gemini import embed_text, increment_gemini_counter
 from app.services.scoring import canonical_pair, cosine_similarity
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["embeddings"])
 
 _CIRCUIT_BREAKER_KEY = "circuit_breaker:open"
-_DAILY_COUNT_KEY = "gemini:daily_count"
 
 
 def _build_profile_text(profile: dict) -> str:
@@ -60,7 +59,7 @@ async def recompute_embeddings(
     # Embed profile
     try:
         profile_vector = await embed_text(profile_text)
-        await _increment_gemini_counter(redis)
+        await increment_gemini_counter(redis)
     except Exception:
         logger.exception("Gemini embed failed for profile")
         raise HTTPException(status_code=503, detail="Embedding service unavailable")
@@ -96,7 +95,7 @@ async def recompute_embeddings(
 
     try:
         event_vector = await embed_text(event_text)
-        await _increment_gemini_counter(redis)
+        await increment_gemini_counter(redis)
     except Exception:
         logger.exception("Gemini embed failed for event embedding")
         raise HTTPException(status_code=503, detail="Embedding service unavailable")
@@ -138,18 +137,3 @@ async def recompute_embeddings(
             logger.exception("Failed to upsert score for pair (%s, %s)", uid_a, uid_b)
 
     return {"status": "ok"}
-
-
-async def _increment_gemini_counter(redis) -> None:
-    count = await redis.incr(_DAILY_COUNT_KEY)
-    if count == 1:
-        # First call today — set TTL to midnight UTC
-        import datetime
-        now = datetime.datetime.now(datetime.timezone.utc)
-        midnight = (now + datetime.timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        ttl = int((midnight - now).total_seconds())
-        await redis.expire(_DAILY_COUNT_KEY, ttl)
-    if count >= 1200:
-        await redis.set("circuit_breaker:open", "1", ex=86400)
