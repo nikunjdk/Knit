@@ -41,3 +41,13 @@ Thumbs.db
 
 # Node (Railway CLI, Firebase tools)
 node_modules/
+
+# Claude Code / tooling
+.agents/
+.history/
+.claude/
+skills-lock.json
+frontend/.agents/
+frontend/skills-lock.json
+frontend/.metadata
+frontend/supabase/
