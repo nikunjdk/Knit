@@ -3,18 +3,17 @@ name = "knit-api"
 version = "0.1.0"
 description = "Knit networking app — FastAPI backend"
 authors = ["Knit"]
-readme = "README.md"
-packages = [{include = "app"}]
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.13"
 fastapi = "^0.115.0"
 uvicorn = {extras = ["standard"], version = "^0.32.0"}
 pydantic-settings = "^2.6.0"
 httpx = "^0.28.0"
 supabase = "^2.10.0"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
-google-generativeai = "^0.8.0"
+google-genai = "^1.0.0"
 numpy = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -22,15 +21,14 @@ pytest = "^8.3.0"
 pytest-asyncio = "^0.24.0"
 pytest-mock = "^3.14.0"
 ruff = "^0.7.0"
-httpx = "^0.28.0"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 100
-target-version = "py312"
+line-length = 120
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
