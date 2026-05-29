@@ -1,3 +1,5 @@
+"""LinkedIn enrichment endpoint — fetches, parses, and persists profile data."""
+
 import hashlib
 import json
 import logging
@@ -15,6 +17,8 @@ from app.services.linkd import get_profile
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["profiles"])
 
+# Interest taxonomy shared with the Flutter client and the interest_tags DB table.
+# Changing this set requires a tag remapping migration across existing profiles.
 _VALID_TAGS = {
     "AI/ML",
     "Web Dev",
@@ -68,6 +72,11 @@ def _parse_headline(headline: str | None) -> tuple[str | None, str | None]:
 
 
 async def _map_interests_via_gemini(skills: list[str]) -> list[str]:
+    """Map raw LinkedIn skills to up to 5 tags from _VALID_TAGS using Gemini.
+
+    Returns [] on any failure — tag mapping is non-fatal for the enrichment flow.
+    Gemini sometimes wraps JSON in markdown fences; those are stripped before parsing.
+    """
     from google import genai
 
     from app.core.config import get_settings
@@ -93,11 +102,19 @@ async def _map_interests_via_gemini(skills: list[str]) -> list[str]:
         return []
 
 
-@router.post("/enrich-profile", response_model=EnrichProfileResponse)
+@router.post("/enrich-profile", response_model=EnrichProfileResponse, summary="Enrich profile from LinkedIn")
 async def enrich_profile(
     body: EnrichProfileRequest,
     user_id: str = Depends(verify_jwt),
 ):
+    """Fetch LinkedIn data via LinkdAPI, map skills to interest tags, and persist enriched fields.
+
+    Flow: LinkedIn URL → username extraction → LinkdAPI → headline parsing (role/company) →
+    Gemini tag mapping (Redis-cached 7d per unique skill fingerprint) → Supabase profile update.
+
+    Persistence failures are non-fatal — enriched data is returned to the client even if the
+    Supabase write fails. Tag mapping failures return an empty interests list.
+    """
     username = _extract_username(body.linkedin_url)
     if not username:
         raise HTTPException(status_code=422, detail="Could not extract LinkedIn username from URL")

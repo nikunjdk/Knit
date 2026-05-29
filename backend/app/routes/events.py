@@ -1,3 +1,5 @@
+"""Public event lookup — no auth required; used for the pre-join event preview screen."""
+
 import logging
 
 from fastapi import APIRouter, HTTPException, Query
@@ -9,10 +11,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["events"])
 
 
-@router.get("/events/lookup", response_model=EventLookupResponse)
+@router.get("/events/lookup", response_model=EventLookupResponse, summary="Look up event by join code")
 async def lookup_event(
     join_code: str = Query(..., min_length=1, max_length=10, pattern=r"^[A-Z0-9]+$"),
 ):
+    """Return a public event snapshot by join code. No authentication required.
+
+    Called before the Google OAuth redirect so the user sees event details before signing in.
+    Returns 404 if the join code doesn't exist; 410 if the event has ended (is_active=false).
+    """
     sb = await get_supabase_client()
     try:
         result = (
