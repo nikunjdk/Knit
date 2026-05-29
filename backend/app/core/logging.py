@@ -1,3 +1,5 @@
+"""Root logger setup — JSON in prod, human-readable in dev; always writes to stdout."""
+
 import json
 import logging
 import sys

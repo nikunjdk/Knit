@@ -1,3 +1,5 @@
+"""Google Gemini integration — text embeddings (sync via thread), streaming generation, daily circuit breaker."""
+
 import asyncio
 import datetime
 import logging
@@ -23,7 +25,9 @@ def _get_client() -> genai.Client:
 
 
 async def embed_text(text: str) -> list[float]:
+    """Return a 768-dimensional embedding vector for `text` using text-embedding-004."""
     client = _get_client()
+    # The Google genai SDK is synchronous; asyncio.to_thread prevents blocking the event loop.
     result = await asyncio.to_thread(
         client.models.embed_content,
         model="text-embedding-004",
@@ -33,6 +37,7 @@ async def embed_text(text: str) -> list[float]:
 
 
 async def generate_stream(prompt: str) -> AsyncGenerator[str]:
+    """Stream text chunks from gemini-2.0-flash; yields only non-empty chunk strings."""
     client = _get_client()
     async for chunk in await client.aio.models.generate_content_stream(
         model="gemini-2.0-flash",
@@ -43,6 +48,11 @@ async def generate_stream(prompt: str) -> AsyncGenerator[str]:
 
 
 async def increment_gemini_counter(redis: "RedisClient") -> None:
+    """Increment the daily Gemini call counter; open the circuit breaker if the limit is reached.
+
+    On the first call of the day (count == 1) the TTL is set to expire at midnight UTC
+    so the counter resets automatically without a scheduled job.
+    """
     count = await redis.incr(_DAILY_COUNT_KEY)
     if count == 1:
         now = datetime.datetime.now(datetime.UTC)

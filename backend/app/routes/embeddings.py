@@ -1,3 +1,5 @@
+"""Embedding recompute endpoint — generates profile/event vectors and scores attendee pairs."""
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,11 +29,20 @@ def _build_profile_text(profile: dict) -> str:
     return " ".join(parts) if parts else "professional"
 
 
-@router.post("/embeddings/recompute", status_code=202)
+@router.post("/embeddings/recompute", status_code=202, summary="Recompute profile and event embeddings")
 async def recompute_embeddings(
     body: EmbeddingRecomputeRequest,
     user_id: str = Depends(verify_jwt),
 ):
+    """Generate embeddings and compute attendee relevance scores. Returns 202 immediately (fire-and-forget pattern).
+
+    Always recomputes the cross-event profile embedding (role + company + interests → 768-d vector).
+    When event_id is provided, also computes an event-scoped embedding (profile + agenda) and upserts
+    cosine similarity scores against all other attendees in event_attendee_scores using canonical pair order.
+
+    Persistence failures for individual score upserts are non-fatal and logged; the 503 only fires
+    if the Gemini embedding call itself fails.
+    """
     redis = get_redis_client()
 
     # Circuit breaker check — must happen before any Gemini call

@@ -1,3 +1,5 @@
+"""Pydantic settings loaded from env vars (or `.env.qa` locally); cached singleton via lru_cache."""
+
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

@@ -1,3 +1,5 @@
+"""FastAPI app factory — CORS, lifespan, router registration."""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -13,6 +15,7 @@ setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Warms the Supabase singleton before the first request hits any route."""
     from app.core.supabase import get_supabase_client
 
     await get_supabase_client()
