@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 
 class EventLookupResponse(BaseModel):
+    """Pre-auth event snapshot returned before the Google OAuth redirect."""
+
     id: str
     title: str
     description: str | None = None

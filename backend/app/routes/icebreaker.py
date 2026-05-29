@@ -1,3 +1,5 @@
+"""Icebreaker SSE endpoint — three-tier cache (Redis → Postgres → Gemini)."""
+
 import json
 import logging
 
@@ -18,6 +20,7 @@ _ICEBREAKER_TTL = 7 * 24 * 3600
 
 
 def _cache_key(event_id: str, uid_a: str, uid_b: str) -> str:
+    # uid_a < uid_b is enforced by canonical_pair() before this is called.
     return f"icebreaker:{event_id}:{uid_a}:{uid_b}"
 
 
@@ -57,12 +60,27 @@ def _sse_stream(content: str) -> StreamingResponse:
     )
 
 
-@router.get("/icebreaker/stream")
+@router.get("/icebreaker/stream", summary="Stream icebreaker questions for an attendee pair")
 async def stream_icebreaker(
     event_id: str = Query(...),
     other_user_id: str = Query(...),
     user_id: str = Depends(verify_jwt),
 ):
+    """Generate 3 personalized icebreaker questions as a Server-Sent Events stream.
+
+    Cache lookup order (cheapest first):
+      1. Redis key `icebreaker:{event_id}:{uid_a}:{uid_b}` (7-day TTL) — returns immediately
+      2. Postgres `icebreaker_cache` table — warms Redis, then returns
+      3. Gemini 2.0 Flash — streams live; caches to Postgres + Redis on completion
+
+    Canonical pair order (uid_a < uid_b) is enforced before every cache lookup and DB write
+    so there is always exactly one cache entry per pair regardless of who initiates.
+
+    SSE frame format:
+      - `{"chunk": "<text>"}` — one or more during generation
+      - `{"done": true}` — signals end of stream
+      - `{"error": "STREAM_ERROR"}` — mid-stream Gemini failure (stream stays open until this frame)
+    """
     redis = get_redis_client()
     uid_a, uid_b = canonical_pair(user_id, other_user_id)
     key = _cache_key(event_id, uid_a, uid_b)

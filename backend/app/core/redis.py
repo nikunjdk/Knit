@@ -1,3 +1,5 @@
+"""Upstash Redis REST client — each command is a single HTTP POST, no persistent TCP connection."""
+
 from functools import lru_cache
 
 import httpx
@@ -6,11 +8,14 @@ from app.core.config import get_settings
 
 
 class RedisClient:
+    """HTTP wrapper around the Upstash Redis REST API. All methods map 1-to-1 with Redis commands."""
+
     def __init__(self, url: str, token: str) -> None:
         self._url = url.rstrip("/")
         self._headers = {"Authorization": f"Bearer {token}"}
 
     async def _cmd(self, *args: object) -> object:
+        """Send a Redis command as a JSON array; return the value at `response["result"]`."""
         async with httpx.AsyncClient() as client:
             r = await client.post(self._url, json=list(args), headers=self._headers)
             r.raise_for_status()
