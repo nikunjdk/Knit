@@ -24,7 +24,7 @@ async def lookup_event(
     try:
         result = (
             await sb.table("events")
-            .select("*, profiles(full_name), event_attendees(user_id)")
+            .select("*, profiles!events_organizer_id_fkey(full_name), event_attendees(user_id)")
             .eq("join_code", join_code)
             .maybe_single()
             .execute()
