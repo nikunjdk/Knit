@@ -24,7 +24,11 @@ CREATE POLICY "profiles_insert" ON profiles
 
 CREATE POLICY "profiles_update" ON profiles
     FOR UPDATE TO authenticated
-    USING (id = auth.uid());
+    USING (id = auth.uid())
+    WITH CHECK (id = auth.uid());
+
+-- Prevent users from directly changing their own id or email via PostgREST
+REVOKE UPDATE (id, email) ON profiles FROM authenticated;
 
 -- events: read if organizer or attendee; insert/update if organizer
 CREATE POLICY "events_select" ON events
@@ -40,7 +44,11 @@ CREATE POLICY "events_insert" ON events
 
 CREATE POLICY "events_update" ON events
     FOR UPDATE TO authenticated
-    USING (organizer_id = auth.uid());
+    USING (organizer_id = auth.uid())
+    WITH CHECK (organizer_id = auth.uid());
+
+-- digest_generation_count must only be incremented via increment_digest_count() SECURITY DEFINER
+REVOKE UPDATE (digest_generation_count) ON events FROM authenticated;
 
 -- event_attendees: read co-attendees in same event; write own row
 CREATE POLICY "event_attendees_select" ON event_attendees
@@ -56,7 +64,11 @@ CREATE POLICY "event_attendees_insert" ON event_attendees
 
 CREATE POLICY "event_attendees_update" ON event_attendees
     FOR UPDATE TO authenticated
-    USING (user_id = auth.uid());
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+-- Users may only edit agenda/privacy/visibility — not their identity or which event they're in
+REVOKE UPDATE (event_id, user_id, referred_by) ON event_attendees FROM authenticated;
 
 -- connections: read/write own connections only
 CREATE POLICY "connections_select" ON connections
