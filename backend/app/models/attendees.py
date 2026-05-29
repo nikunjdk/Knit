@@ -2,6 +2,8 @@ from pydantic import BaseModel
 
 
 class AttendeeProfile(BaseModel):
+    """Attendee snapshot used for the event people list (fetched client-side from Supabase)."""
+
     user_id: str
     full_name: str
     avatar_url: str | None = None

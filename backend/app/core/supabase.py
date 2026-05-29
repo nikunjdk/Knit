@@ -1,3 +1,5 @@
+"""Async Supabase client (service role) — initialized once on startup and reused across requests."""
+
 import asyncio
 
 from supabase import AsyncClient, acreate_client
@@ -5,6 +7,8 @@ from supabase import AsyncClient, acreate_client
 from app.core.config import get_settings
 
 _client: AsyncClient | None = None
+# asyncio.Lock prevents double-initialization when two concurrent requests
+# both see _client is None before the first one finishes creating it.
 _lock = asyncio.Lock()
 
 

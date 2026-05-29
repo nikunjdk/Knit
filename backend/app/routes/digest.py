@@ -1,3 +1,5 @@
+"""Organizer-only digest SSE endpoint — streams event stats then an AI summary, capped at 3 per event."""
+
 import json
 import logging
 from collections import Counter
@@ -55,11 +57,27 @@ def _build_digest_prompt(event: dict, stats: dict) -> str:
     )
 
 
-@router.get("/digest/stream")
+@router.get("/digest/stream", summary="Stream post-event digest for the organizer")
 async def stream_digest(
     event_id: str = Query(...),
     user_id: str = Depends(verify_jwt),
 ):
+    """Generate a post-event digest as a Server-Sent Events stream. Organizer only; capped at 3 per event.
+
+    The first SSE frame is always `{"stats": {...}}` so the UI can render the stats bar
+    before the Gemini text starts arriving. Subsequent frames are `{"chunk": "<text>"}`.
+
+    The digest generation count is incremented atomically via the Postgres RPC
+    `increment_digest_count(p_event_id, p_cap)` — not a read-modify-write — so the cap
+    cannot be exceeded even under concurrent requests. The cap is also checked before Gemini
+    is called; the atomic increment only runs after a successful stream.
+
+    SSE frame format:
+      - `{"stats": {"attendee_count": int, "connection_count": int, "top_tags": [...], "connection_density": float}}`
+      - `{"chunk": "<text>"}` — one or more during generation
+      - `{"done": true, "generations_remaining": int}` — end of stream
+      - `{"error": "STREAM_ERROR"}` — mid-stream Gemini failure
+    """
     redis = get_redis_client()
     sb = await get_supabase_client()
 

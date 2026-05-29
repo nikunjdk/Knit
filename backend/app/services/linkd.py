@@ -1,3 +1,5 @@
+"""LinkdAPI client for LinkedIn profile enrichment."""
+
 import httpx
 
 from app.core.config import get_settings
@@ -7,6 +9,7 @@ _TIMEOUT = 3.0
 
 
 async def get_profile(username: str) -> dict:
+    """Fetch a LinkedIn profile by username. Raises httpx.TimeoutException or httpx.HTTPStatusError on failure."""
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         r = await client.get(
             f"{_BASE}/profile/full",

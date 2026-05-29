@@ -6,6 +6,8 @@ class EnrichProfileRequest(BaseModel):
 
 
 class EnrichProfileResponse(BaseModel):
+    """Enriched profile data returned to the client after LinkedIn lookup."""
+
     full_name: str | None = None
     role: str | None = None
     company: str | None = None
@@ -15,4 +17,5 @@ class EnrichProfileResponse(BaseModel):
 
 
 class EmbeddingRecomputeRequest(BaseModel):
+    # When event_id is None, only the cross-event profile embedding is recomputed (no scoring).
     event_id: str | None = None
